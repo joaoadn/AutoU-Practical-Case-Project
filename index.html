@@ -4,152 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classificação de Emails</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', 'Arial', sans-serif;
             margin: 0;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #f5f5f5;
+            padding: 0;
+            background-color: #282424;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
+
         
+
         .container {
-            background: white;
+            max-width: 600px;
+            width: 100%;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: #282424;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-family: 'Inter', 'Arial', sans-serif; /* Aplica a fonte Inter aos títulos */
         }
 
-        textarea, input {
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
             width: 100%;
+            position: relative;
+        }
+
+        textarea {
+            flex: 1;
             padding: 12px;
             margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #414040;
+            border-radius: 8px;
             box-sizing: border-box;
+            font-size: 16px;
+            background-color: #3a3a3a;
+            color: #ffffff;
+            resize: none; /* Remove o redimensionamento manual */
+            overflow: hidden; /* Remove a barra de rolagem */
+            font-family: 'Inter', 'Arial', sans-serif; /* Aplica a fonte Inter ao textarea */
+            min-height: 48px; /* Altura inicial para 2 linhas */
         }
 
-        textarea:focus, input:focus {
-            outline: none;
-            border-color: #007bff;
+        textarea::placeholder {
+            font-family: 'Inter', 'Arial', sans-serif; /* Aplica a fonte Inter ao placeholder */
+            color: #b0b0b0;
+        }
+
+        .custom-file-upload {
+            margin-left: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: #ffffff;
+            border-radius: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+
+        .custom-file-upload:hover {
+            background-color: #868686;
+        }
+
+        .custom-file-upload i {
+            color: #000000;
+            font-size: 16px;
+        }
+
+        .custom-file-upload:hover::after {
+            content: 'Anexar arquivo (.pdf, .txt)';
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #282424;
+            color: #ffffff;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        input[type="file"] {
+            display: none; /* Esconde o input padrão */
         }
 
         button {
             background-color: #007bff;
             color: white;
-            padding: 12px 20px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            width: 100%;
             font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-top: -12px;
         }
 
         button:hover {
             background-color: #0056b3;
         }
 
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-
-        .result {
+        .footer {
             margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-        .error {
-            color: #dc3545;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            display: none;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .category-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 15px;
             font-size: 14px;
-            font-weight: bold;
+            color: #747474;
+            text-align: center;
         }
 
-        .category-produtivo { background-color: #d4edda; color: #155724; }
-        .category-improdutivo { background-color: #f8d7da; color: #721c24; }
-        .category-urgente { background-color: #fff3cd; color: #856404; }
+        .footer img {
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Classificação de Emails</h1>
+        <h1>Olá! Qual email você quer analisar?</h1>
         
         <form id="emailForm">
-            <label for="emailText">Cole o texto do email:</label>
-            <textarea id="emailText" rows="10" placeholder="Cole o conteúdo do email aqui..."></textarea>
-            
-            <label for="fileUpload">Ou faça upload de um arquivo:</label>
-            <input type="file" id="fileUpload" accept=".txt,.pdf">
-            
-            <div class="error" id="errorMessage"></div>
-            
-            <button type="button" onclick="processEmail()" id="processButton">
-                Processar Email
-            </button>
+            <div class="input-container">
+                <textarea id="emailText" rows="2" placeholder="Escreva o email aqui"></textarea>
+                <label for="fileUpload" class="custom-file-upload">
+                    <i class="ri-attachment-line"></i>
+                    <input type="file" id="fileUpload" accept=".txt,.pdf">
+                </label>
+            </div>
         </form>
+    </div>
 
-        <div class="loading" id="loading">
-            Processando... Por favor, aguarde.
-        </div>
+    <button type="button" onclick="processEmail()" id="processButton">Processar Email</button>
 
-        <div class="result" id="resultSection" style="display: none;">
-            <h2>Resultado:</h2>
-            <p>
-                <strong>Categoria:</strong> 
-                <span id="category" class="category-badge"></span>
-            </p>
-            <p>
-                <strong>Resposta Sugerida:</strong><br>
-                <span id="response"></span>
-            </p>
-        </div>
+    <div class="footer">
+        
+        <span>Desenvolvido com o poder da OpenAI. </span>
     </div>
 
     <script>
         const processButton = document.getElementById('processButton');
-        const loadingDiv = document.getElementById('loading');
-        const errorDiv = document.getElementById('errorMessage');
-        const resultSection = document.getElementById('resultSection');
+        const emailText = document.getElementById('emailText');
+        const fileUpload = document.getElementById('fileUpload');
 
         function showError(message) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
+            alert(message);
         }
 
         function setLoading(isLoading) {
             processButton.disabled = isLoading;
-            loadingDiv.style.display = isLoading ? 'block' : 'none';
             processButton.textContent = isLoading ? 'Processando...' : 'Processar Email';
         }
 
@@ -164,19 +191,17 @@
 
         async function processEmail() {
             try {
-                const emailText = document.getElementById('emailText').value;
-                const file = document.getElementById('fileUpload').files[0];
+                const emailTextValue = emailText.value;
+                const file = fileUpload.files[0];
                 
-                // Validação básica
-                if (!emailText && !file) {
+                if (!emailTextValue && !file) {
                     showError('Por favor, insira um texto ou selecione um arquivo.');
                     return;
                 }
 
                 setLoading(true);
-                errorDiv.style.display = 'none';
                 
-                let content = emailText;
+                let content = emailTextValue;
                 if (file) {
                     content = await readFileContent(file);
                 }
@@ -207,31 +232,32 @@
                     throw new Error(result.error);
                 }
 
-                // Atualizar a interface
-                const categorySpan = document.getElementById('category');
-                categorySpan.textContent = result.category;
-                categorySpan.className = 'category-badge category-' + result.category.toLowerCase();
-                
-                document.getElementById('response').textContent = result.response;
-                resultSection.style.display = 'block';
+                alert(`Categoria: ${result.category}\nResposta Sugerida: ${result.response}`);
             } catch (error) {
                 showError('Erro ao processar a requisição: ' + error.message);
             }
         }
 
-        // Limpar campos quando um novo arquivo é selecionado
-        document.getElementById('fileUpload').addEventListener('change', function(e) {
+        fileUpload.addEventListener('change', function(e) {
             if (e.target.files.length > 0) {
-                document.getElementById('emailText').value = '';
+                emailText.value = '';
             }
         });
 
-        // Limpar arquivo quando texto é inserido
-        document.getElementById('emailText').addEventListener('input', function(e) {
+        emailText.addEventListener('input', function(e) {
             if (e.target.value) {
-                document.getElementById('fileUpload').value = '';
+                fileUpload.value = '';
             }
+            adjustTextareaHeight(e.target);
         });
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+
+        // Inicializa a altura do textarea
+        adjustTextareaHeight(emailText);
     </script>
 </body>
 </html>
