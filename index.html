@@ -18,9 +18,8 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            overflow: hidden;
         }
-
-        
 
         .container {
             max-width: 600px;
@@ -32,11 +31,115 @@
             margin-bottom: 20px;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background-color: #3a3a3a;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .email-category {
+            margin-bottom: 20px;
+        }
+
+        .email-category h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #ffffff;
+            border-bottom: 1px solid #575757;
+            padding-bottom: 5px;
+        }
+
+        .email-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .email-item {
+            background-color: #414040;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .email-item:hover {
+            background-color: #575757;
+        }
+
+        .email-item.produtivo {
+            border-left: 4px solid #28a745;
+        }
+
+        .email-item.improdutivo {
+            border-left: 4px solid #dc3545;
+        }
+
+        .email-item .email-content {
+            flex: 1;
+            margin-right: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-item .email-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .email-item .email-actions button {
+            background-color: transparent;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
         h1 {
             font-size: 24px;
             margin-bottom: 20px;
             color: #ffffff;
-            font-family: 'Inter', 'Arial', sans-serif; /* Aplica a fonte Inter aos títulos */
+            font-family: 'Inter', 'Arial', sans-serif;
         }
 
         label {
@@ -62,14 +165,14 @@
             font-size: 16px;
             background-color: #3a3a3a;
             color: #ffffff;
-            resize: none; /* Remove o redimensionamento manual */
-            overflow: hidden; /* Remove a barra de rolagem */
-            font-family: 'Inter', 'Arial', sans-serif; /* Aplica a fonte Inter ao textarea */
-            min-height: 48px; /* Altura inicial para 2 linhas */
+            resize: none;
+            overflow: hidden;
+            font-family: 'Inter', 'Arial', sans-serif;
+            min-height: 48px;
         }
 
         textarea::placeholder {
-            font-family: 'Inter', 'Arial', sans-serif; /* Aplica a fonte Inter ao placeholder */
+            font-family: 'Inter', 'Arial', sans-serif;
             color: #b0b0b0;
         }
 
@@ -111,7 +214,45 @@
         }
 
         input[type="file"] {
-            display: none; /* Esconde o input padrão */
+            display: none;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #b0b0b0;
+        }
+
+        .notification {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .notification.hide {
+            opacity: 0;
+        }
+
+        .notification.success {
+            background-color: #28a745; /* Verde */
+            color: white;
+        }
+
+        .notification.error {
+            background-color: #dc3545; /* Vermelho */
+            color: white;
         }
 
         button {
@@ -124,10 +265,29 @@
             font-size: 16px;
             transition: background-color 0.3s ease;
             margin-top: -12px;
+            display: flex;
+            align-items: center;
         }
 
         button:hover {
             background-color: #0056b3;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .footer {
@@ -159,25 +319,58 @@
         </form>
     </div>
 
-    <button type="button" onclick="processEmail()" id="processButton">Processar Email</button>
+    <button type="button" onclick="processEmail()" id="processButton" aria-label="Processar Email">
+        Processar Email
+        <div class="spinner" id="spinner"></div>
+    </button>
 
-    <div class="footer">
-        
-        <span>Desenvolvido com o poder da OpenAI. </span>
+    <div class="modal" id="responseModal">
+        <div class="modal-header">
+            <h2>Resposta Sugerida</h2>
+            <button class="modal-close" onclick="toggleResponseModal()">×</button>
+        </div>
+        <div class="modal-content">
+            <p id="classificationResult"></p>
+            <textarea id="suggestedResponse" readonly></textarea>
+            <button onclick="copyResponse()">Copiar Resposta</button>
+        </div>
     </div>
 
+    <div class="notification" id="notification" role="alert"></div>
+
+    <div class="footer">
+        <span>Desenvolvido com o poder da OpenAI. </span>
+    </div>
+    
     <script>
         const processButton = document.getElementById('processButton');
         const emailText = document.getElementById('emailText');
         const fileUpload = document.getElementById('fileUpload');
+        const filePreview = document.getElementById('filePreview');
+        const notification = document.getElementById('notification');
+        const spinner = document.getElementById('spinner');
+        const responseModal = document.getElementById('responseModal');
+        const classificationResult = document.getElementById('classificationResult');
+        const suggestedResponse = document.getElementById('suggestedResponse');
 
         function showError(message) {
-            alert(message);
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type) {
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            setTimeout(() => {
+                notification.classList.add('hide');
+                setTimeout(() => {
+                    notification.className = `notification ${type}`;
+                }, 300);
+            }, 3000);
         }
 
         function setLoading(isLoading) {
             processButton.disabled = isLoading;
-            processButton.textContent = isLoading ? 'Processando...' : 'Processar Email';
+            spinner.style.display = isLoading ? 'inline-block' : 'none';
         }
 
         async function readFileContent(file) {
@@ -206,7 +399,9 @@
                     content = await readFileContent(file);
                 }
 
-                await sendToBackend(content);
+                const result = await sendToBackend(content);
+                showNotification('Email processado com sucesso!', 'success');
+                showResponseModal(result.category, result.response);
             } catch (error) {
                 showError('Ocorreu um erro ao processar o email: ' + error.message);
             } finally {
@@ -232,21 +427,55 @@
                     throw new Error(result.error);
                 }
 
-                alert(`Categoria: ${result.category}\nResposta Sugerida: ${result.response}`);
+                return result;
             } catch (error) {
                 showError('Erro ao processar a requisição: ' + error.message);
             }
         }
 
+        function showResponseModal(category, response) {
+            classificationResult.textContent = `Classificação: ${category}`;
+            suggestedResponse.value = response;
+            responseModal.style.display = 'block';
+        }
+
+        function toggleResponseModal() {
+            responseModal.style.display = responseModal.style.display === 'none' || responseModal.style.display === '' ? 'block' : 'none';
+        }
+
+        function copyResponse() {
+            suggestedResponse.select();
+            document.execCommand('copy');
+            showNotification('Resposta copiada para a área de transferência!', 'success');
+        }
+
         fileUpload.addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (file) {
+                const validExtensions = ['pdf', 'txt'];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (!validExtensions.includes(fileExtension)) {
+                    showError('Formato de arquivo inválido. Apenas .pdf e .txt são suportados.');
+                    fileUpload.value = '';
+                    filePreview.textContent = '';
+                    return;
+                }
                 emailText.value = '';
+                filePreview.innerHTML = `Arquivo selecionado: ${file.name} <span class="remove-file" onclick="removeFile()">x</span>`;
+            } else {
+                filePreview.textContent = '';
             }
         });
+
+        function removeFile() {
+            fileUpload.value = '';
+            filePreview.textContent = '';
+        }
 
         emailText.addEventListener('input', function(e) {
             if (e.target.value) {
                 fileUpload.value = '';
+                filePreview.textContent = '';
             }
             adjustTextareaHeight(e.target);
         });
@@ -256,7 +485,6 @@
             textarea.style.height = (textarea.scrollHeight) + 'px';
         }
 
-        // Inicializa a altura do textarea
         adjustTextareaHeight(emailText);
     </script>
 </body>
