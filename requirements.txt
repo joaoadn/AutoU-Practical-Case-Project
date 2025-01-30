@@ -7,5 +7,7 @@ gunicorn==23.0.0
 scikit-learn==1.2.2
 pandas==2.2.3
 joblib==1.4.2
-requests==2.31.0  # Adicionando requests para fazer requisições HTTP
+requests==2.31.0
 unittest2==1.1.0
+redis==4.5.1
+cachelib==0.9.0

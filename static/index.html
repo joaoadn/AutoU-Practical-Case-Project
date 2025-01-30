@@ -329,6 +329,7 @@
         }
     </style>
 </head>
+<script src="/static/script.js"></script>
 <body>
     <div class="container">
         <h1>Olá! Qual email você quer analisar?</h1>
@@ -439,8 +440,7 @@
 
         async function sendToBackend(content) {
             try {
-                const response = await fetch('/process', {
-                    method: 'POST',
+                const response = await fetch(window.location.origin + '/process', {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: content })
                 });
