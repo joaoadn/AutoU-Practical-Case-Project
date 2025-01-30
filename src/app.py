@@ -13,7 +13,7 @@ app = Flask(__name__, static_url_path='/static', static_folder='../static')
 
 # Carregar o modelo treinado
 try:
-    model_path = "./models/email-classifier/model.joblib"
+    model_path = os.path.join(os.path.dirname(__file__), '../models/email-classifier/model.joblib')
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Modelo não encontrado: {model_path}")
     model = joblib.load(model_path)

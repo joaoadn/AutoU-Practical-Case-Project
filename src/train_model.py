@@ -35,15 +35,9 @@ model.fit(train_texts, train_labels)
 # Avaliar o modelo
 predictions = model.predict(val_texts)
 print(classification_report(val_labels, predictions))
-print(f"Acurácia: {accuracy_score(val_labels, predictions)}")
-
-# Validação cruzada
-cross_val_scores = cross_val_score(model, texts, labels, cv=5)
-print(f"Scores de validação cruzada: {cross_val_scores}")
-print(f"Média dos scores de validação cruzada: {cross_val_scores.mean()}")
 
 # Salvar o modelo treinado
-output_model_dir = "../models/email-classifier"
+output_model_dir = os.path.join(os.path.dirname(__file__), '../models/email-classifier')
 if not os.path.exists(output_model_dir):
     os.makedirs(output_model_dir)
 joblib.dump(model, os.path.join(output_model_dir, "model.joblib"))

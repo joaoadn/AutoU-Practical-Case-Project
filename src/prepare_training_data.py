@@ -3,7 +3,7 @@ import os
 import re
 
 # Caminho para salvar o arquivo CSV
-output_path = "../data/email_training_data.csv"  # Caminho relativo à pasta `src/`
+output_path = os.path.join(os.path.dirname(__file__), '../data/email_training_data.csv')
 
 # Verifica se a pasta de dados existe, caso contrário, cria
 if not os.path.exists(os.path.dirname(output_path)):
@@ -24,40 +24,21 @@ training_data = {
         "Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.",
         "Por favor, pode me ajudar com o erro #1234 que está aparecendo no módulo de relatórios?",
         "Solicito atualização sobre o caso #5678 aberto na semana passada.",
-        "O sistema está apresentando lentidão. Necessito de verificação urgente.",
-        "Não consigo acessar minha conta. Preciso de ajuda para resetar a senha.",
-        "Encontrei um bug no módulo de exportação. Podem verificar?",
-        "Precisamos agendar uma reunião para discutir as atualizações do sistema.",
-        "Solicitação de novo acesso para o usuário João Silva.",
-        "Bug crítico identificado na última atualização. Necessita correção imediata.",
-        "Relatório mensal apresentando inconsistências. Requer análise.",
-        # Adicione mais exemplos de emails produtivos aqui...
-        
-        # Emails Improdutivos
-        "Obrigado pela ajuda com o sistema ontem!",
-        "Desejo a todos um ótimo feriado!",
-        "Parabéns pelo excelente trabalho realizado!",
-        "Recebi o relatório, muito obrigado.",
-        "Confirmando o recebimento do email anterior.",
-        "Ótimo trabalho na apresentação de hoje!",
-        "Feliz aniversário! Desejo tudo de bom.",
-        "Agradecendo a atenção de sempre.",
-        "Newsletter mensal da empresa.",
-        "Convite para happy hour da equipe."
-        # Adicione mais exemplos de emails improdutivos aqui...
+        # Adicione mais exemplos conforme necessário
     ],
     'label': [
-        # Labels correspondentes (1 para Produtivo, 0 para Improdutivo)
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        # Labels correspondentes (1 para produtivo, 0 para improdutivo)
+        1,
+        1,
+        1,
+        # Adicione mais labels conforme necessário
     ]
 }
 
 # Limpar e normalizar os textos
 training_data['text'] = [clean_text(text) for text in training_data['text']]
 
-# Criar DataFrame
+# Criar um DataFrame e salvar como CSV
 df = pd.DataFrame(training_data)
-
-# Salvar como CSV
 df.to_csv(output_path, index=False)
+print(f"Dados de treinamento salvos em: {output_path}")

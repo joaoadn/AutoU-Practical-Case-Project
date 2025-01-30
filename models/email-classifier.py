@@ -37,7 +37,7 @@ predictions = model.predict(val_texts)
 print(classification_report(val_labels, predictions))
 
 # Salvar o modelo treinado
-output_model_dir = "../models/email-classifier"
+output_model_dir = "./models/email-classifier"
 if not os.path.exists(output_model_dir):
     os.makedirs(output_model_dir)
 joblib.dump(model, os.path.join(output_model_dir, "model.joblib"))

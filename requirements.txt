@@ -12,3 +12,4 @@ requests==2.27.1
 unittest2==1.1.0
 redis==5.2.1
 cachelib==0.13.0
+huggingface_hub==0.28.1
