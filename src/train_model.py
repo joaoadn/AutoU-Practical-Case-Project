@@ -38,7 +38,7 @@ def compute_metrics(pred):
 
 # Configurar o treinamento
 training_args = TrainingArguments(
-    output_dir="./models/email-classifier",
+    output_dir="../models/email-classifier",
     learning_rate=2e-5,
     per_device_train_batch_size=8,
     num_train_epochs=3,
@@ -57,5 +57,5 @@ trainer = Trainer(
 trainer.train()
 
 # Salvar o modelo treinado
-trainer.save_model("./models/email-classifier")
-print("Modelo treinado salvo em ./models/email-classifier")
+trainer.save_model("../models/email-classifier")
+print("Modelo treinado salvo em ../models/email-classifier")

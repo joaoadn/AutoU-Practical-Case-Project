@@ -1,84 +1,77 @@
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
+from datasets import Dataset
 import os
+import numpy as np
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+import torch
 
-# Verificar se o arquivo CSV existe
-csv_path = "../data/email_training_data.csv"
-if not os.path.exists(csv_path):
-    raise FileNotFoundError(f"Arquivo CSV não encontrado: {csv_path}")
+# Caminhos para os arquivos de dados
+data_dir = "../data"
+produtivo_path = os.path.join(data_dir, "produtivo.txt")
+improdutivo_path = os.path.join(data_dir, "improdutivo.txt")
 
-# Caminho para o modelo BERT em português
-model_dir = "../models/bert-portuguese"
+# Função para carregar dados de um arquivo
+def load_data(file_path, label):
+    with open(file_path, "r", encoding="utf-8") as file:
+        lines = file.readlines()
+    lines = [line.strip() for line in lines if line.strip()]
+    return lines, [label] * len(lines)
 
-# Verificar se o diretório do modelo existe
-if not os.path.exists(model_dir):
-    raise FileNotFoundError(f"Diretório do modelo BERT não encontrado: {model_dir}")
+# Carregar dados produtivos e improdutivos
+produtivo_texts, produtivo_labels = load_data(produtivo_path, 1)  # 1 para produtivo
+improdutivo_texts, improdutivo_labels = load_data(improdutivo_path, 0)  # 0 para improdutivo
 
-# Carregar o modelo e o tokenizador
-model = AutoModelForSequenceClassification.from_pretrained(model_dir, num_labels=2)
-tokenizer = AutoTokenizer.from_pretrained(model_dir)
+# Combinar dados
+texts = produtivo_texts + improdutivo_texts
+labels = produtivo_labels + improdutivo_labels
 
-# Carregar dados de treinamento
-data = pd.read_csv(csv_path)
+# Criar um dataset do Hugging Face
+dataset = Dataset.from_dict({'text': texts, 'label': labels})
 
-# Verificar se as colunas "text" e "label" existem no CSV
-if "text" not in data.columns or "label" not in data.columns:
-    raise ValueError("O arquivo CSV deve conter as colunas 'text' e 'label'.")
+# Carregar o tokenizer
+tokenizer = AutoTokenizer.from_pretrained("D:/Program Files (x86)/VsCode/UFLA/UFLA - 2024.2/Inteligencia-Artificial/AutoU-Practical-Case-Project/models/bert-portuguese")
 
-# Pré-processar os dados
-texts = data["text"].tolist()
-labels = data["label"].tolist()
+# Função para tokenização
+def tokenize_function(examples):
+    return tokenizer(examples["text"], padding="max_length", truncation=True)
 
-# Tokenizar os textos
-encodings = tokenizer(texts, truncation=True, padding=True, max_length=512)
+# Tokenizar o dataset
+tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
-# Converter para formato de dataset do PyTorch
-class EmailDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
-
-    def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-        item["labels"] = torch.tensor(self.labels[idx])
-        return item
-
-    def __len__(self):
-        return len(self.labels)
-
-# Dividir os dados em treino e teste
-train_texts, val_texts, train_labels, val_labels = train_test_split(texts, labels, test_size=0.2)
-train_encodings = tokenizer(train_texts, truncation=True, padding=True, max_length=512)
-val_encodings = tokenizer(val_texts, truncation=True, padding=True, max_length=512)
-
-train_dataset = EmailDataset(train_encodings, train_labels)
-val_dataset = EmailDataset(val_encodings, val_labels)
-
-# Configurações de treinamento
-training_args = TrainingArguments(
-    output_dir="../models/email-classifier",  # Pasta para salvar o modelo treinado
-    num_train_epochs=3,  # Número de épocas
-    per_device_train_batch_size=8,  # Tamanho do batch
-    per_device_eval_batch_size=8,
-    logging_dir="../logs",  # Pasta para logs
-    evaluation_strategy="epoch",  # Avaliar a cada época
-    save_strategy="epoch",  # Salvar a cada época
-    save_total_limit=2,  # Manter apenas os 2 últimos checkpoints
-    load_best_model_at_end=True,  # Carregar o melhor modelo ao final
+# Carregar o modelo
+model = AutoModelForSequenceClassification.from_pretrained(
+    "D:/Program Files (x86)/VsCode/UFLA/UFLA - 2024.2/Inteligencia-Artificial/AutoU-Practical-Case-Project/models/bert-portuguese", 
+    num_labels=2
 )
 
-# Verificar se o diretório de logs existe, caso contrário, criar
-if not os.path.exists("../logs"):
-    os.makedirs("../logs")
+# Função para calcular métricas
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
+    acc = accuracy_score(labels, preds)
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall
+    }
 
-# Inicializar o Trainer
+# Configurar o treinamento
+training_args = TrainingArguments(
+    output_dir="../models/email-classifier",
+    learning_rate=2e-5,
+    per_device_train_batch_size=8,
+    num_train_epochs=3,
+    evaluation_strategy="epoch",
+)
+
+# Criar o Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=val_dataset,
+    train_dataset=tokenized_datasets,
+    compute_metrics=compute_metrics,
 )
 
 # Treinar o modelo
@@ -86,5 +79,4 @@ trainer.train()
 
 # Salvar o modelo treinado
 trainer.save_model("../models/email-classifier")
-tokenizer.save_pretrained("../models/email-classifier")
-print("Modelo treinado e salvo em: ../models/email-classifier")
+print("Modelo treinado salvo em ../models/email-classifier")
