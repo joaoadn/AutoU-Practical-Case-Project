@@ -8,3 +8,42 @@
 2025-01-30 14:04:21,115 [ERROR] - Erro ao carregar modelo: Modelo não encontrado: d:\Program Files (x86)\VsCode\UFLA\UFLA - 2024.2\Inteligencia-Artificial\AutoU-Practical-Case-Project\AutoU-Practical-Case-Project-1\src\../models/email-classifier/model.joblib
 2025-01-30 14:06:55,305 [ERROR] - Erro ao carregar modelo: Modelo não encontrado: d:\Program Files (x86)\VsCode\UFLA\UFLA - 2024.2\Inteligencia-Artificial\AutoU-Practical-Case-Project\AutoU-Practical-Case-Project-1\src\../models/email-classifier/model.joblib
 2025-01-30 14:09:05,529 [ERROR] - Erro ao carregar modelo: Modelo não encontrado: d:\Program Files (x86)\VsCode\UFLA\UFLA - 2024.2\Inteligencia-Artificial\AutoU-Practical-Case-Project\AutoU-Practical-Case-Project-1\src\../models/email-classifier/model.joblib
+2025-01-30 14:11:06,624 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:11:07,473 [INFO] - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-01-30 14:11:07,474 [INFO] - [33mPress CTRL+C to quit[0m
+2025-01-30 14:11:07,478 [INFO] -  * Restarting with stat
+2025-01-30 14:11:11,419 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:11:12,027 [WARNING] -  * Debugger is active!
+2025-01-30 14:11:12,037 [INFO] -  * Debugger PIN: 562-843-092
+2025-01-30 14:11:24,235 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:11:24] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-30 14:11:24,255 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:11:24] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-30 14:11:24,575 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:11:24] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-01-30 14:11:28,759 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:11:28] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-30 14:11:29,528 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:11:29] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-30 14:11:40,324 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:11:40] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-30 14:12:46,524 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:12:49,608 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:12:49] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-30 14:13:04,515 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:13:05,563 [INFO] - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-01-30 14:13:05,564 [INFO] - [33mPress CTRL+C to quit[0m
+2025-01-30 14:13:05,568 [INFO] -  * Restarting with stat
+2025-01-30 14:13:12,692 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:13:13,321 [WARNING] -  * Debugger is active!
+2025-01-30 14:13:13,340 [INFO] -  * Debugger PIN: 562-843-092
+2025-01-30 14:14:40,558 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:14:41,229 [INFO] - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-01-30 14:14:41,230 [INFO] - [33mPress CTRL+C to quit[0m
+2025-01-30 14:14:41,234 [INFO] -  * Restarting with stat
+2025-01-30 14:14:45,766 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:14:46,420 [WARNING] -  * Debugger is active!
+2025-01-30 14:14:46,428 [INFO] -  * Debugger PIN: 562-843-092
+2025-01-30 14:14:48,994 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:14:48] "GET / HTTP/1.1" 200 -
+2025-01-30 14:14:51,457 [INFO] - 127.0.0.1 - - [30/Jan/2025 14:14:51] "GET / HTTP/1.1" 200 -
+2025-01-30 14:15:44,602 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:17:36,453 [WARNING] - Redis não disponível, usando cache em memória
+2025-01-30 14:17:41,466 [INFO] - Modelo carregado com sucesso
+2025-01-30 14:17:50,302 [WARNING] - Redis não disponível, usando cache em memória
+2025-01-30 14:17:53,520 [INFO] - Modelo carregado com sucesso

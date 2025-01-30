@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 # Inicialização do cache
 try:
     cache = redis.Redis(host='localhost', port=6379, db=0)
-except:
+    cache.ping()  # Verifica se o Redis está disponível
+except (redis.ConnectionError, redis.TimeoutError):
     logger.warning("Redis não disponível, usando cache em memória")
     cache = SimpleCache()
 

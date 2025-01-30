@@ -46,7 +46,7 @@ def classify_email(email_text):
 
 @app.route('/')
 def serve_static():
-    return send_from_directory('.', 'index.html')
+    return "Bem-vindo ao Classificador de Emails!"
 
 @app.route('/process', methods=['POST'])
 @rate_limit

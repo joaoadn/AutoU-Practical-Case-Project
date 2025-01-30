@@ -1,4 +1,0 @@
-Executar em ordem:
-
-python models/email-classifier.py
-python -m unittest discover -s tests
