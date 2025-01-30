@@ -3,7 +3,7 @@ from functools import wraps
 import time
 import logging
 import redis
-from werkzeug.contrib.cache import SimpleCache
+from cachelib import SimpleCache
 
 # Configurações
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB

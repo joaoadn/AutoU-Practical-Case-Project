@@ -1,6 +1,4 @@
 Executar em ordem:
 
-python src/prepare_training_data.py
-python src/train_model.py
-python -m unittest tests.test_app
-
+python models/email-classifier.py
+python -m unittest discover -s tests

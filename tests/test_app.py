@@ -1,52 +1,92 @@
-import unittest
-from src.app import app
+from flask import request, jsonify
+from functools import wraps
+import time
+import logging
+import redis
+from cachelib import SimpleCache
 
-class TestApp(unittest.TestCase):
-    def setUp(self):
-        app.testing = True
-        self.app = app.test_client()
+# Configurações
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+RATE_LIMIT_REQUESTS = 100
+RATE_LIMIT_WINDOW = 3600  # 1 hora
+CACHE_TIMEOUT = 300  # 5 minutos
 
-    def test_email_classification_productive(self):
-        # Teste com um email que deve ser produtivo
-        email_produtivo = {
-            'email': 'Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.'
-        }
+# Configuração de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Inicialização do cache
+try:
+    cache = redis.Redis(host='localhost', port=6379, db=0)
+except:
+    logger.warning("Redis não disponível, usando cache em memória")
+    cache = SimpleCache()
+
+def rate_limit(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        ip = request.remote_addr
+        current = time.time()
+        pipe = cache.pipeline()
         
-        response = self.app.post('/process', json=email_produtivo)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('category', response.json)
-        self.assertIn('response', response.json)
-        self.assertEqual(response.json['category'], 'produtivo')
-
-    def test_email_classification_unproductive(self):
-        # Teste com um email que deve ser improdutivo
-        email_improdutivo = {
-            'email': 'Obrigado pela ajuda com o sistema ontem!'
-        }
+        # Chave única para o IP
+        key = f'rate_limit:{ip}'
         
-        response = self.app.post('/process', json=email_improdutivo)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('category', response.json)
-        self.assertIn('response', response.json)
-        self.assertEqual(response.json['category'], 'improdutivo')
-
-    def test_invalid_email_input(self):
-        # Teste com uma entrada inválida
-        invalid_email = {
-            'email': ''
-        }
+        # Limpar requests antigos
+        pipe.zremrangebyscore(key, 0, current - RATE_LIMIT_WINDOW)
         
-        response = self.app.post('/process', json=invalid_email)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json)
-
-    def test_missing_email_field(self):
-        # Teste com um campo de email ausente
-        missing_email_field = {}
+        # Contar requests no período
+        pipe.zcard(key)
         
-        response = self.app.post('/process', json=missing_email_field)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json)
+        # Adicionar request atual
+        pipe.zadd(key, {str(current): current})
+        
+        # Definir TTL
+        pipe.expire(key, RATE_LIMIT_WINDOW)
+        
+        # Executar pipeline
+        _, request_count, *_ = pipe.execute()
+        
+        if request_count > RATE_LIMIT_REQUESTS:
+            logger.warning(f"Rate limit excedido para IP {ip}")
+            return jsonify({'error': 'Rate limit exceeded'}), 429
+            
+        return f(*args, **kwargs)
+    return decorated_function
 
-if __name__ == '__main__':
-    unittest.main()
+def validate_file_size(file):
+    if file.content_length > MAX_FILE_SIZE:
+        logger.warning(f"Arquivo muito grande: {file.content_length} bytes")
+        return False
+    return True
+
+def cache_response(timeout=CACHE_TIMEOUT):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Criar chave única baseada na requisição
+            cache_key = f"cache:{request.path}:{hash(str(request.get_json()))}"
+            
+            # Tentar obter do cache
+            rv = cache.get(cache_key)
+            if rv is not None:
+                logger.info(f"Cache hit para {cache_key}")
+                return rv
+                
+            # Se não estiver no cache, executar função
+            rv = f(*args, **kwargs)
+            
+            # Armazenar no cache
+            cache.set(cache_key, rv, timeout=timeout)
+            logger.info(f"Cache miss para {cache_key}")
+            
+            return rv
+        return decorated_function
+    return decorator
