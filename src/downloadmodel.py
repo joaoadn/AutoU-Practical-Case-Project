@@ -1,3 +1,4 @@
+import os
 from huggingface_hub import hf_hub_download
 from config import BASE_DIR
 
