@@ -1,5 +1,5 @@
 import unittest
-from app import app, preprocess_text, allowed_file
+from src.app import app, preprocess_text, allowed_file
 
 class TestApp(unittest.TestCase):
     def setUp(self):

@@ -1,0 +1,9 @@
+__pycache__/
+venv/
+.env
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+config/OPEN_API_KEY.env  # Ignora o arquivo de chave da API
+scripts/AImail.pem       # Ignora o arquivo de certificado
