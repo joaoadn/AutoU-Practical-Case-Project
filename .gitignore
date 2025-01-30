@@ -10,4 +10,5 @@ scripts/AImail.pem       # Ignora o arquivo de certificado
 models/bert-portuguese/.cache/
 
 .vercel
+
 models/bert-portuguese/models--neuralmind--bert-base-portuguese-cased/snapshots/94d69c95f98f7d5b2a8700c420230ae10def0baa/pytorch_model.bin
