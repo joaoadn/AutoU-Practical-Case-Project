@@ -1,29 +1,28 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 import joblib
-import os
 from openai import OpenAI
-from werkzeug.utils import secure_filename
+from config import FLASK_CONFIG, MODEL_PATH, OPENAI_API_KEY
 import PyPDF2
-from config import (
-    logger, rate_limit, validate_file_size, 
-    cache_response, MAX_FILE_SIZE
-)
+import logging
 
-app = Flask(__name__, static_url_path='/static', static_folder='../static')
+# Configuração do logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Carregar o modelo treinado
+# Inicializar o Flask
+app = Flask(__name__)
+app.config.update(FLASK_CONFIG)
+
+# Carregar o modelo
 try:
-    model_path = os.path.join(os.path.dirname(__file__), '../models/email-classifier/model.joblib')
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Modelo não encontrado: {model_path}")
-    model = joblib.load(model_path)
+    model = joblib.load(MODEL_PATH)
     logger.info("Modelo carregado com sucesso")
 except Exception as e:
     logger.error(f"Erro ao carregar modelo: {e}")
     raise
 
 # Inicializar o cliente OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def extract_text_from_pdf(file):
     try:
@@ -34,51 +33,18 @@ def extract_text_from_pdf(file):
         return text
     except Exception as e:
         logger.error(f"Erro ao extrair texto do PDF: {e}")
-        raise
+        return ""
 
-def classify_email(email_text):
+def classify_email(content):
     try:
-        prediction = model.predict([email_text])
-        return "produtivo" if prediction[0] == 1 else "improdutivo"
+        prediction = model.predict([content])
+        return prediction[0]
     except Exception as e:
-        logger.error(f"Erro na classificação: {e}")
-        raise
+        logger.error(f"Erro ao classificar email: {e}")
+        return "improdutivo"
 
-@app.route('/')
-def serve_static():
-    return "Bem-vindo ao Classificador de Emails!"
-
-@app.route('/process', methods=['POST'])
-@rate_limit
-@cache_response()
-def process_email():
+def generate_response(content):
     try:
-        # Verificar se é upload de arquivo ou texto
-        if 'file' in request.files:
-            file = request.files['file']
-            
-            if not validate_file_size(file):
-                return jsonify({'error': f'Arquivo muito grande. Máximo: {MAX_FILE_SIZE/1024/1024}MB'}), 400
-                
-            if file.filename.endswith('.pdf'):
-                content = extract_text_from_pdf(file)
-            elif file.filename.endswith('.txt'):
-                content = file.read().decode('utf-8')
-            else:
-                return jsonify({'error': 'Formato de arquivo não suportado'}), 400
-        else:
-            data = request.json
-            if not data or 'email' not in data:
-                return jsonify({'error': 'Texto do email é obrigatório'}), 400
-            content = data['email']
-
-        # Log do processamento
-        logger.info(f"Processando email: {content[:100]}...")
-
-        # Classificação do email
-        category = classify_email(content)
-        
-        # Geração de Resposta usando OpenAI
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -86,18 +52,35 @@ def process_email():
                 {"role": "user", "content": content}
             ]
         )
-        
-        result = {
-            'category': category,
-            'response': response.choices[0].message.content
-        }
-        
-        logger.info(f"Email processado com sucesso. Categoria: {category}")
-        return jsonify(result)
-        
+        return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"Erro no processamento: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Erro ao gerar resposta: {e}")
+        return "Desculpe, não foi possível gerar uma resposta."
+
+@app.route('/process', methods=['POST'])
+def process_email():
+    try:
+        if 'file' in request.files:
+            file = request.files['file']
+            if file.filename.endswith('.pdf'):
+                content = extract_text_from_pdf(file)
+            else:
+                content = file.read().decode('utf-8')
+        else:
+            data = request.json
+            content = data.get('email', '')
+
+        if not content:
+            return jsonify({'error': 'Texto do email é obrigatório'}), 400
+
+        category = classify_email(content)
+        response_content = generate_response(content)
+
+        return jsonify({'category': category, 'response': response_content}), 200
+
+    except Exception as e:
+        logger.error(f"Erro ao processar o email: {e}")
+        return jsonify({'error': 'Erro ao processar o email'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
