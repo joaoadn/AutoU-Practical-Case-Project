@@ -40,7 +40,7 @@ Integração Backend-Frontend: Conexão entre a API e a interface web para inter
 
 5. Deploy na Nuvem
 
-Hospedagem: Implementação realizada na Vercel.
+Hospedagem: Implementação realizada no AWS.
 
 Disponibilidade Online: Um link funcional será fornecido para acesso externo.
 
