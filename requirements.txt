@@ -4,5 +4,8 @@ python-dotenv==1.0.0
 PyPDF2==3.0.1
 nltk==3.9.1
 gunicorn==23.0.0
-scikit-learn==1.6.1
+scikit-learn==1.2.2
 pandas==2.2.3
+joblib==1.4.2
+requests==2.31.0  # Adicionando requests para fazer requisições HTTP
+unittest2==1.1.0
