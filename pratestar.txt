@@ -1,1 +1,5 @@
+Executar em ordem:
+
+python prepare_training_data.py
+python train_model.py
 python -m unittest test_app.py
