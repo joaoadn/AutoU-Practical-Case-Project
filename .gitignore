@@ -9,3 +9,4 @@ config/OPEN_API_KEY.env  # Ignora o arquivo de chave da API
 scripts/AImail.pem       # Ignora o arquivo de certificado
 models/bert-portuguese/.cache/
 
+.vercel

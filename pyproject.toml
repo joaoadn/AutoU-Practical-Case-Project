@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AutoU-Practical-Case-Project"
+version = "0.1.0"
+description = "A practical case project for AutoU"
+authors = [
+    { name = "Joao Dias", email = "joaoadn@outlook.com" }
+]

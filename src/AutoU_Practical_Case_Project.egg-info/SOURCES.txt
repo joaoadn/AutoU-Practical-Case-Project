@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/__init__.py
+src/app.py
+src/downloadmodel.py
+src/prepare_training_data.py
+src/train_model.py
+src/AutoU_Practical_Case_Project.egg-info/PKG-INFO
+src/AutoU_Practical_Case_Project.egg-info/SOURCES.txt
+src/AutoU_Practical_Case_Project.egg-info/dependency_links.txt
+src/AutoU_Practical_Case_Project.egg-info/top_level.txt
+tests/test_app.py
