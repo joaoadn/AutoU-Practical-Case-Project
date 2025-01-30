@@ -51,22 +51,3 @@ Este projeto é uma aplicação para classificar emails como produtivos ou impro
     
     python -m unittest discover -s tests
     
-
-## Estrutura do Projeto
-
-.
-├── src
-│   ├── app.py
-│   ├── prepare_training_data.py
-│   ├── train_model.py
-│   ├── downloadmodel.py
-│   └── ...
-├── static
-│   ├── index.html
-│   ├── styles.css
-│   └── script.js
-├── tests
-│   └── test_app.py
-├── .env
-├── requirements.txt
-└── README.md
