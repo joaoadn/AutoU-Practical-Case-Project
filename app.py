@@ -7,8 +7,10 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from werkzeug.utils import secure_filename
+
 import PyPDF2
 import os
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -19,9 +21,10 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Limite de 5MB para uploads
 ALLOWED_EXTENSIONS = {'txt', 'pdf'}
 
+
 load_dotenv()  # Carregar variáveis do arquivo .env
 
-# Usando a variável de ambiente normalmente
+# Usar a variável de ambiente
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Pré-processamento de texto
@@ -43,7 +46,7 @@ def allowed_file(filename):
 # Inicializar o classificador com um modelo em português
 classifier = pipeline(
     "text-classification",
-    model="neuralmind/bert-base-portuguese-cased",  # Modelo em português
+    model="./models/email-classifier",  # Caminho local do modelo
     return_all_scores=True
 )
 
