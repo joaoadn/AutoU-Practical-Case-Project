@@ -9,6 +9,14 @@ from nltk.stem import PorterStemmer
 from werkzeug.utils import secure_filename
 import PyPDF2
 import os
+from transformers import pipeline
+
+model_path = os.path.join(os.path.dirname(__file__), '../models/email-classifier')
+classifier = pipeline(
+    "email-classifier",
+    model=model_path,
+    return_all_scores=True
+)
 
 # Configuração para usar modelos offline
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
