@@ -1,61 +1,50 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
-from datasets import load_dataset
-import numpy as np
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-import torch
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
+from sklearn.metrics import classification_report, accuracy_score
+import pandas as pd
+import os
+import joblib
 
-# Carregar o dataset
-dataset = load_dataset('csv', data_files='../data/email_training_data.csv')
+# Verificar se o arquivo CSV existe
+csv_path = "../data/email_training_data.csv"
+if not os.path.exists(csv_path):
+    raise FileNotFoundError(f"Arquivo CSV não encontrado: {csv_path}")
 
-# Carregar o tokenizer
-tokenizer = AutoTokenizer.from_pretrained("neuralmind/bert-base-portuguese-cased")
+# Carregar dados de treinamento
+data = pd.read_csv(csv_path)
 
-# Função para tokenização
-def tokenize_function(examples):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
+# Verificar se as colunas "text" e "label" existem no CSV
+if "text" not in data.columns or "label" not in data.columns:
+    raise ValueError("O arquivo CSV deve conter as colunas 'text' e 'label'.")
 
-# Tokenizar o dataset
-tokenized_datasets = dataset.map(tokenize_function, batched=True)
+# Pré-processar os dados
+texts = data["text"].tolist()
+labels = data["label"].tolist()
 
-# Carregar o modelo
-model = AutoModelForSequenceClassification.from_pretrained(
-    "neuralmind/bert-base-portuguese-cased", 
-    num_labels=2
-)
+# Dividir os dados em treino e teste
+train_texts, val_texts, train_labels, val_labels = train_test_split(texts, labels, test_size=0.2, random_state=42)
 
-# Função para calcular métricas
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
-    acc = accuracy_score(labels, preds)
-    return {
-        'accuracy': acc,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall
-    }
-
-# Configurar o treinamento
-training_args = TrainingArguments(
-    output_dir="../models/email-classifier",
-    learning_rate=2e-5,
-    per_device_train_batch_size=8,
-    num_train_epochs=3,
-    evaluation_strategy="epoch",
-)
-
-# Criar o Trainer
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_datasets["train"],
-    compute_metrics=compute_metrics,
-)
+# Criar um pipeline de TF-IDF e Naive Bayes
+model = make_pipeline(TfidfVectorizer(), MultinomialNB())
 
 # Treinar o modelo
-trainer.train()
+model.fit(train_texts, train_labels)
+
+# Avaliar o modelo
+predictions = model.predict(val_texts)
+print(classification_report(val_labels, predictions))
+print(f"Acurácia: {accuracy_score(val_labels, predictions)}")
+
+# Validação cruzada
+cross_val_scores = cross_val_score(model, texts, labels, cv=5)
+print(f"Scores de validação cruzada: {cross_val_scores}")
+print(f"Média dos scores de validação cruzada: {cross_val_scores.mean()}")
 
 # Salvar o modelo treinado
-trainer.save_model("../models/email-classifier")
-print("Modelo treinado salvo em ../models/email-classifier")
+output_model_dir = "../models/email-classifier"
+if not os.path.exists(output_model_dir):
+    os.makedirs(output_model_dir)
+joblib.dump(model, os.path.join(output_model_dir, "model.joblib"))
+print(f"Modelo treinado e salvo em: {output_model_dir}")

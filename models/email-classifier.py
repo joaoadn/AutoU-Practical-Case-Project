@@ -1,82 +1,44 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
-from datasets import Dataset
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
+from sklearn.metrics import classification_report
+import pandas as pd
 import os
-import numpy as np
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-import torch
+import joblib
 
-# Caminhos para os arquivos de dados
-data_dir = "../data"
-produtivo_path = os.path.join(data_dir, "produtivo.txt")
-improdutivo_path = os.path.join(data_dir, "improdutivo.txt")
+# Verificar se o arquivo CSV existe
+csv_path = "../data/email_training_data.csv"
+if not os.path.exists(csv_path):
+    raise FileNotFoundError(f"Arquivo CSV não encontrado: {csv_path}")
 
-# Função para carregar dados de um arquivo
-def load_data(file_path, label):
-    with open(file_path, "r", encoding="utf-8") as file:
-        lines = file.readlines()
-    lines = [line.strip() for line in lines if line.strip()]
-    return lines, [label] * len(lines)
+# Carregar dados de treinamento
+data = pd.read_csv(csv_path)
 
-# Carregar dados produtivos e improdutivos
-produtivo_texts, produtivo_labels = load_data(produtivo_path, 1)  # 1 para produtivo
-improdutivo_texts, improdutivo_labels = load_data(improdutivo_path, 0)  # 0 para improdutivo
+# Verificar se as colunas "text" e "label" existem no CSV
+if "text" not in data.columns or "label" not in data.columns:
+    raise ValueError("O arquivo CSV deve conter as colunas 'text' e 'label'.")
 
-# Combinar dados
-texts = produtivo_texts + improdutivo_texts
-labels = produtivo_labels + improdutivo_labels
+# Pré-processar os dados
+texts = data["text"].tolist()
+labels = data["label"].tolist()
 
-# Criar um dataset do Hugging Face
-dataset = Dataset.from_dict({'text': texts, 'label': labels})
+# Dividir os dados em treino e teste
+train_texts, val_texts, train_labels, val_labels = train_test_split(texts, labels, test_size=0.2, random_state=42)
 
-# Carregar o tokenizer
-tokenizer = AutoTokenizer.from_pretrained("D:/Program Files (x86)/VsCode/UFLA/UFLA - 2024.2/Inteligencia-Artificial/AutoU-Practical-Case-Project/models/bert-portuguese")
-
-# Função para tokenização
-def tokenize_function(examples):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
-
-# Tokenizar o dataset
-tokenized_datasets = dataset.map(tokenize_function, batched=True)
-
-# Carregar o modelo
-model = AutoModelForSequenceClassification.from_pretrained(
-    "D:/Program Files (x86)/VsCode/UFLA/UFLA - 2024.2/Inteligencia-Artificial/AutoU-Practical-Case-Project/models/bert-portuguese", 
-    num_labels=2
-)
-
-# Função para calcular métricas
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
-    acc = accuracy_score(labels, preds)
-    return {
-        'accuracy': acc,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall
-    }
-
-# Configurar o treinamento
-training_args = TrainingArguments(
-    output_dir="../models/email-classifier",
-    learning_rate=2e-5,
-    per_device_train_batch_size=8,
-    num_train_epochs=3,
-    evaluation_strategy="epoch",
-)
-
-# Criar o Trainer
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_datasets,
-    compute_metrics=compute_metrics,
-)
+# Criar um pipeline de TF-IDF e Naive Bayes
+model = make_pipeline(TfidfVectorizer(), MultinomialNB())
 
 # Treinar o modelo
-trainer.train()
+model.fit(train_texts, train_labels)
+
+# Avaliar o modelo
+predictions = model.predict(val_texts)
+print(classification_report(val_labels, predictions))
 
 # Salvar o modelo treinado
-trainer.save_model("../models/email-classifier")
-print("Modelo treinado salvo em ../models/email-classifier")
+output_model_dir = "../models/email-classifier"
+if not os.path.exists(output_model_dir):
+    os.makedirs(output_model_dir)
+joblib.dump(model, os.path.join(output_model_dir, "model.joblib"))
+print(f"Modelo treinado e salvo em: {output_model_dir}")
