@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import torch
 
 # Carregar o dataset
-dataset = load_dataset('csv', data_files='email_training_data.csv')
+dataset = load_dataset('csv', data_files='../data/email_training_data.csv')
 
 # Carregar o tokenizer
 tokenizer = AutoTokenizer.from_pretrained("neuralmind/bert-base-portuguese-cased")

@@ -7,27 +7,30 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from werkzeug.utils import secure_filename
-
 import PyPDF2
 import os
+
+# Configuração para usar modelos offline
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
+# Baixar recursos do NLTK
 nltk.download('punkt')
 nltk.download('stopwords')
 
+# Inicializar o Flask
 app = Flask(__name__)
 
 # Configurações de segurança
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Limite de 5MB para uploads
 ALLOWED_EXTENSIONS = {'txt', 'pdf'}
 
+# Carregar variáveis de ambiente
+load_dotenv("../config/OPEN_API_KEY.env")  # Ajuste o caminho para o arquivo .env
 
-load_dotenv()  # Carregar variáveis do arquivo .env
-
-# Usar a variável de ambiente
+# Inicializar o cliente da OpenAI
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-# Pré-processamento de texto
+# Função para pré-processamento de texto
 def preprocess_text(text):
     # Tokenização
     tokens = word_tokenize(text.lower())
@@ -46,14 +49,16 @@ def allowed_file(filename):
 # Inicializar o classificador com um modelo em português
 classifier = pipeline(
     "text-classification",
-    model="./models/email-classifier",  # Caminho local do modelo
+    model="../models/email-classifier",  # Caminho relativo ao modelo
     return_all_scores=True
 )
 
+# Rota principal
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('index.html')  # Ajuste o caminho para o template
 
+# Rota para upload de arquivos
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -82,6 +87,7 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Rota para processar o email
 @app.route('/process', methods=['POST'])
 def process_email(email_text=None):
     try:
@@ -120,5 +126,6 @@ def process_email(email_text=None):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Iniciar o aplicativo
 if __name__ == '__main__':
     app.run(debug=True)
