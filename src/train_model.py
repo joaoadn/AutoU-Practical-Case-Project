@@ -1,7 +1,6 @@
 import pandas as pd
 import joblib
 import logging
-import os
 from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
