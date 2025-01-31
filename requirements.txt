@@ -1,14 +1,9 @@
 Flask==3.1.0
-openai==1.60.2
+openai==1.60.2   # Se realmente necessário
 python-dotenv==1.0.1
-PyPDF2==3.0.1
-nltk==3.9.1
-gunicorn==23.0.0
-scikit-learn==1.6.1
-pandas==2.2.3
-joblib==1.4.2
-requests==2.32.3
-unittest2==1.1.0
-redis==5.2.1
-cachelib==0.13.0
-huggingface_hub==0.28.1
+PyPDF2==3.0.1    # Remover ou substituir por alternativas mais específicas
+scikit-learn==1.6.1   # Talvez substitua por uma versão mais leve
+pandas==2.2.3    # Verifique se realmente precisa de pandas, senão remova
+requests==2.32.3 # Substituir por urllib, se for simples
+redis==5.2.1     # Pode remover se for usar apenas cachelib
+huggingface_hub==0.28.1 # Remover se não usar modelos diretamente do Hub
