@@ -2,7 +2,6 @@ import sys
 import os
 import unittest
 from io import BytesIO
-from pathlib import Path
 import logging
 
 # Adicionar o diretório src ao sys.path
@@ -11,26 +10,40 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from src.app import app
 
 class TestApp(unittest.TestCase):
-    def setUp(self):
+    
+    @classmethod
+    def setUpClass(cls):
         """
-        Configura o ambiente de teste.
+        Configura o ambiente de teste, que é executado uma única vez antes de todos os testes.
         """
-        app.testing = True
-        self.app = app.test_client()
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+        cls.logger = logging.getLogger(__name__)
+        cls.logger.setLevel(logging.INFO)
 
         # Configurar logs para exibir no console durante os testes
         handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        if not cls.logger.handlers:  # Evita adicionar múltiplos handlers
+            cls.logger.addHandler(handler)
+
+    def setUp(self):
+        """
+        Configura o ambiente de cada teste.
+        """
+        app.testing = True
+        self.app = app.test_client()
 
     def tearDown(self):
         """
         Limpa o ambiente de teste.
         """
         pass
+
+    def _post_email(self, email_data):
+        """
+        Função auxiliar para evitar repetição de código ao testar diferentes tipos de email.
+        """
+        return self.app.post('/process', json=email_data)
 
     def test_email_classification_productive(self):
         """
@@ -40,7 +53,7 @@ class TestApp(unittest.TestCase):
             'email': 'Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.'
         }
         
-        response = self.app.post('/process', json=email_produtivo)
+        response = self._post_email(email_produtivo)
         self.assertEqual(response.status_code, 200)
         self.assertIn('category', response.json)
         self.assertIn('response', response.json)
@@ -55,7 +68,7 @@ class TestApp(unittest.TestCase):
             'email': 'Obrigado pela ajuda com o sistema ontem!'
         }
         
-        response = self.app.post('/process', json=email_improdutivo)
+        response = self._post_email(email_improdutivo)
         self.assertEqual(response.status_code, 200)
         self.assertIn('category', response.json)
         self.assertIn('response', response.json)
@@ -70,7 +83,7 @@ class TestApp(unittest.TestCase):
             'email': ''
         }
         
-        response = self.app.post('/process', json=invalid_email)
+        response = self._post_email(invalid_email)
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json)
         self.logger.info("Teste de entrada inválida concluído com sucesso.")
@@ -81,7 +94,7 @@ class TestApp(unittest.TestCase):
         """
         missing_email_field = {}
         
-        response = self.app.post('/process', json=missing_email_field)
+        response = self._post_email(missing_email_field)
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json)
         self.logger.info("Teste de campo de email ausente concluído com sucesso.")
@@ -90,7 +103,6 @@ class TestApp(unittest.TestCase):
         """
         Testa o processamento de um arquivo PDF.
         """
-        # Criar um arquivo PDF simulado
         pdf_content = b"%PDF-1.4\n1 0 obj\n<</Type /Catalog /Pages 2 0 R>>\nendobj\n2 0 obj\n<</Type /Pages /Kids [3 0 R] /Count 1>>\nendobj\n3 0 obj\n<</Type /Page /Parent 2 0 R /Contents 4 0 R>>\nendobj\n4 0 obj\n<</Length 44>>\nstream\nBT\n/F1 12 Tf\n72 720 Td\n(Hello, World!) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000010 00000 n\n0000000060 00000 n\n0000000110 00000 n\n0000000190 00000 n\ntrailer\n<</Size 5 /Root 1 0 R>>\nstartxref\n268\n%%EOF"
         pdf_file = BytesIO(pdf_content)
         pdf_file.filename = "test.pdf"
@@ -109,7 +121,7 @@ class TestApp(unittest.TestCase):
             'email': 'Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.'
         }
         
-        response = self.app.post('/process', json=email_produtivo)
+        response = self._post_email(email_produtivo)
         self.assertEqual(response.status_code, 200)
         self.assertIn('response', response.json)
         self.assertIsInstance(response.json['response'], str)
@@ -119,7 +131,6 @@ class TestApp(unittest.TestCase):
         """
         Testa o tratamento de erros no carregamento do modelo.
         """
-        # Simular um erro no carregamento do modelo
         original_model_path = app.config['MODEL_PATH']
         app.config['MODEL_PATH'] = "invalid/path/model.joblib"
 
@@ -127,7 +138,7 @@ class TestApp(unittest.TestCase):
             'email': 'Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.'
         }
         
-        response = self.app.post('/process', json=email_produtivo)
+        response = self._post_email(email_produtivo)
         self.assertEqual(response.status_code, 500)
         self.assertIn('error', response.json)
 
