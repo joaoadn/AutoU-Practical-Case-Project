@@ -1,9 +1,9 @@
 Flask==3.1.0
-openai==1.60.2   # Se realmente necessário
-python-dotenv==1.0.1
-PyPDF2==3.0.1    # Remover ou substituir por alternativas mais específicas
-scikit-learn==1.6.1   # Talvez substitua por uma versão mais leve
-pandas==2.2.3    # Verifique se realmente precisa de pandas, senão remova
-requests==2.32.3 # Substituir por urllib, se for simples
-redis==5.2.1     # Pode remover se for usar apenas cachelib
-huggingface_hub==0.28.1 # Remover se não usar modelos diretamente do Hub
+openai==1.60.2  # Manter se estiver usando a API da OpenAI
+python-dotenv==1.0.1  # Manter se estiver usando variáveis de ambiente
+pdfplumber==0.9.0  # Novo, substituindo PyPDF2 para extração de texto de PDFs
+scikit-learn==1.6.1  # Manter, ou reduzir para versão mais leve (ex. 0.24.2)
+pandas==2.2.3  # Manter se estiver usando para manipulação de dados (caso contrário, remover)
+requests==2.32.3  # Substituir por urllib se não estiver usando muito HTTP
+redis==5.2.1  # Remover se não estiver usando Redis
+huggingface_hub==0.28.1  # Remover se não estiver utilizando modelos do Hugging Face
