@@ -5,5 +5,5 @@ pdfplumber==0.9.0  # Novo, substituindo PyPDF2 para extração de texto de PDFs
 scikit-learn==1.6.1  # Manter, ou reduzir para versão mais leve (ex. 0.24.2)
 pandas==2.2.3  # Manter se estiver usando para manipulação de dados (caso contrário, remover)
 requests==2.32.3  # Substituir por urllib se não estiver usando muito HTTP
-redis==5.2.1  # Remover se não estiver usando Redis
+cachelib==0.9.0
 huggingface_hub==0.28.1  # Remover se não estiver utilizando modelos do Hugging Face
