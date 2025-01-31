@@ -86,6 +86,19 @@ def process_email():
         logger.error(f"Erro ao processar o email: {e}", exc_info=True)
         return jsonify({'error': 'Erro ao processar o email'}), 500
 
-# Inicialização do servidor
+# Handler para o Vercel
+def vercel_handler(request):
+    from flask import Response
+
+    # Converte a requisição do Vercel para o formato do Flask
+    with app.request_context(request):
+        try:
+            response = app.full_dispatch_request()
+        except Exception as e:
+            logger.error(f"Erro ao processar requisição: {e}", exc_info=True)
+            response = app.make_response(jsonify({'error': 'Erro interno no servidor'}), 500)
+        return Response(response.get_data(), status=response.status_code, headers=dict(response.headers))
+
+# Inicialização do servidor (para rodar localmente)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
