@@ -5,19 +5,23 @@ import logging
 from pathlib import Path
 
 # Configuração do logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Caminho para salvar o arquivo CSV
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = os.path.join(BASE_DIR, "data")
-output_path = os.path.join(DATA_DIR, "email_training_data.csv")
+DATA_DIR = BASE_DIR / "data"
+OUTPUT_PATH = DATA_DIR / "email_training_data.csv"
 
 # Verifica se a pasta de dados existe, caso contrário, cria
-os.makedirs(DATA_DIR, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Função para limpar e normalizar o texto
-def clean_text(text):
+# Compilação de regex para melhor performance
+RE_NUMBERS = re.compile(r'\d+')
+RE_SPACES = re.compile(r'\s+')
+RE_PUNCTUATION = re.compile(r'[^\w\s]')
+
+def clean_text(text: str) -> str:
     """
     Limpa e normaliza o texto:
     - Converte para minúsculas
@@ -25,82 +29,61 @@ def clean_text(text):
     - Remove espaços extras
     - Remove pontuação
     """
-    text = text.lower()  # Converte para minúsculas
-    text = re.sub(r'\d+', '', text)  # Remove números
-    text = re.sub(r'\s+', ' ', text)  # Remove espaços extras
-    text = re.sub(r'[^\w\s]', '', text)  # Remove pontuação
+    text = text.lower()
+    text = RE_NUMBERS.sub('', text)  # Remove números
+    text = RE_SPACES.sub(' ', text)  # Remove espaços extras
+    text = RE_PUNCTUATION.sub('', text)  # Remove pontuação
     return text.strip()
 
-# Dados de exemplo para treinamento
-def get_training_data():
+def get_training_data() -> pd.DataFrame:
     """
-    Retorna um dicionário com exemplos de emails e suas labels.
+    Retorna um DataFrame com exemplos de emails e suas labels.
     """
-    return {
-        'text': [
-            # Emails Produtivos
-            "Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.",
-            "Por favor, pode me ajudar com o erro #1234 que está aparecendo no módulo de relatórios?",
-            "Solicito atualização sobre o caso #5678 aberto na semana passada.",
-            "Preciso agendar uma reunião para discutir o projeto XYZ.",
-            "O relatório mensal de vendas está pronto para revisão.",
-            # Emails Improdutivos
-            "Olá, como você está? Vamos marcar um café?",
-            "Você viu o último episódio daquela série? Está incrível!",
-            "Feliz aniversário! Espero que tenha um dia maravilhoso.",
-            "Ei, vamos jogar futebol no final de semana?",
-            "Você já experimentou o novo restaurante da esquina?",
-        ],
-        'label': [
-            # Labels correspondentes (1 para produtivo, 0 para improdutivo)
-            1,  # Produtivo
-            1,  # Produtivo
-            1,  # Produtivo
-            1,  # Produtivo
-            1,  # Produtivo
-            0,  # Improdutivo
-            0,  # Improdutivo
-            0,  # Improdutivo
-            0,  # Improdutivo
-            0,  # Improdutivo
-        ]
-    }
+    data = [
+        # Emails Produtivos
+        ("Preciso de suporte técnico urgente. O sistema está fora do ar desde às 14h.", 1),
+        ("Por favor, pode me ajudar com o erro #1234 que está aparecendo no módulo de relatórios?", 1),
+        ("Solicito atualização sobre o caso #5678 aberto na semana passada.", 1),
+        ("Preciso agendar uma reunião para discutir o projeto XYZ.", 1),
+        ("O relatório mensal de vendas está pronto para revisão.", 1),
+        # Emails Improdutivos
+        ("Olá, como você está? Vamos marcar um café?", 0),
+        ("Você viu o último episódio daquela série? Está incrível!", 0),
+        ("Feliz aniversário! Espero que tenha um dia maravilhoso.", 0),
+        ("Ei, vamos jogar futebol no final de semana?", 0),
+        ("Você já experimentou o novo restaurante da esquina?", 0),
+    ]
+    df = pd.DataFrame(data, columns=["text", "label"])
+    df["text"] = df["text"].apply(clean_text)
+    return df
 
-# Função para adicionar novos dados ao dataset existente
-def append_to_dataset(new_data, output_path):
+def append_to_dataset(new_data: pd.DataFrame, output_path: Path) -> pd.DataFrame:
     """
     Adiciona novos dados ao dataset existente (se o arquivo já existir).
     """
-    if os.path.exists(output_path):
+    if output_path.exists():
         existing_data = pd.read_csv(output_path)
-        updated_data = pd.concat([existing_data, new_data], ignore_index=True)
+        updated_data = pd.concat([existing_data, new_data], ignore_index=True).drop_duplicates()
     else:
         updated_data = new_data
     return updated_data
 
-# Função principal
 def prepare_training_data():
     try:
-        # Obter dados de exemplo
-        training_data = get_training_data()
+        # Obter dados de exemplo e normalizar
+        df = get_training_data()
 
-        # Limpar e normalizar os textos
-        training_data['text'] = [clean_text(text) for text in training_data['text']]
-
-        # Criar um DataFrame
-        df = pd.DataFrame(training_data)
-
-        # Adicionar ao dataset existente (se houver)
-        df = append_to_dataset(df, output_path)
+        # Adicionar ao dataset existente (evitando duplicatas)
+        df = append_to_dataset(df, OUTPUT_PATH)
 
         # Salvar como CSV
-        df.to_csv(output_path, index=False)
-        logger.info(f"Dados de treinamento salvos em: {output_path}")
+        df.to_csv(OUTPUT_PATH, index=False)
+        logger.info(f"Dados de treinamento salvos em: {OUTPUT_PATH}")
         logger.info(f"Total de registros: {len(df)}")
         logger.info(f"Distribuição das labels:\n{df['label'].value_counts()}")
 
     except Exception as e:
-        logger.error(f"Erro ao preparar dados de treinamento: {e}")
+        logger.error(f"Erro ao preparar dados de treinamento: {e}", exc_info=True)
 
 if __name__ == '__main__':
     prepare_training_data()
