@@ -1,95 +1,113 @@
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score
-import joblib
 import os
 import logging
+import torch
+import joblib
+import numpy as np
 from pathlib import Path
+from datasets import load_dataset, Dataset
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from config import BASE_DIR, MODEL_PATH
+from downloadmodel import model_name  # Importa o modelo baixado
 
 # Configuração do logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Caminho para o arquivo CSV de treinamento
-BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = os.path.join(BASE_DIR, "data/email_training_data.csv")
-MODEL_DIR = os.path.join(BASE_DIR, "models/email-classifier")
-MODEL_PATH = os.path.join(MODEL_DIR, "model.joblib")
+# Definição de hiperparâmetros
+BATCH_SIZE = 8
+EPOCHS = 3
+LEARNING_RATE = 2e-5
 
-def load_data(csv_path):
+# Caminho do dataset
+CSV_PATH = BASE_DIR / "data/email_training_data.csv"
+
+# Caminho do diretório para salvar o modelo treinado
+MODEL_DIR = BASE_DIR / "models/email-classifier"
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+def load_data():
     """
-    Carrega os dados de treinamento a partir de um arquivo CSV.
+    Carrega e converte os dados de treinamento para um formato compatível com transformers.
     """
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"Arquivo CSV não encontrado: {csv_path}")
+    if not CSV_PATH.exists():
+        raise FileNotFoundError(f"Arquivo CSV não encontrado: {CSV_PATH}")
 
-    data = pd.read_csv(csv_path)
-    if "text" not in data.columns or "label" not in data.columns:
-        raise ValueError("O arquivo CSV deve conter as colunas 'text' e 'label'.")
+    dataset = load_dataset("csv", data_files=str(CSV_PATH))["train"]
+    dataset = dataset.train_test_split(test_size=0.2, stratify_by_column="label")  # Stratify mantém proporções
+    return dataset
 
-    return data
-
-def evaluate_model(model, X_test, y_test):
+def tokenize_function(examples):
     """
-    Avalia o modelo usando métricas de classificação.
+    Tokeniza os textos usando o tokenizer do modelo do Hugging Face.
     """
-    predictions = model.predict(X_test)
-    accuracy = accuracy_score(y_test, predictions)
-    precision = precision_score(y_test, predictions, average='weighted')
-    recall = recall_score(y_test, predictions, average='weighted')
-    f1 = f1_score(y_test, predictions, average='weighted')
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=512)
 
-    logger.info(f"Acurácia: {accuracy:.2f}")
-    logger.info(f"Precisão: {precision:.2f}")
-    logger.info(f"Recall: {recall:.2f}")
-    logger.info(f"F1-Score: {f1:.2f}")
-
-    # Exibir relatório de classificação
-    logger.info("Relatório de Classificação:\n" + classification_report(y_test, predictions))
+def compute_metrics(eval_pred):
+    """
+    Calcula as métricas de avaliação do modelo.
+    """
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    
+    acc = accuracy_score(labels, predictions)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average="weighted")
+    
+    return {"accuracy": acc, "precision": precision, "recall": recall, "f1": f1}
 
 def train_model():
     try:
         # Carregar dados
-        data = load_data(CSV_PATH)
-        logger.info(f"Total de registros carregados: {len(data)}")
+        dataset = load_data()
+        dataset = dataset.map(tokenize_function, batched=True)
 
-        # Verificar balanceamento das classes
-        class_distribution = data['label'].value_counts()
-        logger.info(f"Distribuição das classes:\n{class_distribution}")
+        # Configurar modelo
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-        # Dividir os dados em treino e teste
-        train_texts, val_texts, train_labels, val_labels = train_test_split(
-            data["text"], data["label"], test_size=0.2, random_state=42
+        # Configuração do treinamento
+        training_args = TrainingArguments(
+            output_dir=str(MODEL_DIR),
+            evaluation_strategy="epoch",
+            save_strategy="epoch",
+            learning_rate=LEARNING_RATE,
+            per_device_train_batch_size=BATCH_SIZE,
+            per_device_eval_batch_size=BATCH_SIZE,
+            num_train_epochs=EPOCHS,
+            weight_decay=0.01,
+            save_total_limit=1,  # Mantém apenas o último modelo salvo
+            push_to_hub=False,
+            logging_dir=str(MODEL_DIR / "logs"),
+            logging_steps=10
         )
-        logger.info(f"Tamanho do conjunto de treino: {len(train_texts)}")
-        logger.info(f"Tamanho do conjunto de teste: {len(val_texts)}")
 
-        # Criar um pipeline de TF-IDF e Naive Bayes
-        model = make_pipeline(TfidfVectorizer(), MultinomialNB())
+        # Criar trainer
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=dataset["train"],
+            eval_dataset=dataset["test"],
+            tokenizer=tokenizer,
+            compute_metrics=compute_metrics
+        )
 
         # Treinar o modelo
         logger.info("Treinando o modelo...")
-        model.fit(train_texts, train_labels)
+        trainer.train()
 
-        # Avaliar o modelo no conjunto de teste
-        logger.info("Avaliando o modelo no conjunto de teste...")
-        evaluate_model(model, val_texts, val_labels)
+        # Avaliação final
+        logger.info("Avaliando modelo no conjunto de teste...")
+        metrics = trainer.evaluate()
+        logger.info(f"Métricas de avaliação: {metrics}")
 
-        # Validação cruzada
-        logger.info("Realizando validação cruzada...")
-        cv_scores = cross_val_score(model, data["text"], data["label"], cv=5, scoring='accuracy')
-        logger.info(f"Acurácia média na validação cruzada: {cv_scores.mean():.2f}")
-
-        # Salvar o modelo treinado
-        os.makedirs(MODEL_DIR, exist_ok=True)
-        joblib.dump(model, MODEL_PATH)
-        logger.info(f"Modelo salvo em: {MODEL_PATH}")
+        # Salvar modelo e tokenizer
+        model.save_pretrained(str(MODEL_DIR))
+        tokenizer.save_pretrained(str(MODEL_DIR))
+        logger.info(f"Modelo salvo em: {MODEL_DIR}")
 
     except Exception as e:
-        logger.error(f"Erro ao treinar o modelo: {e}")
+        logger.error(f"Erro ao treinar o modelo: {e}", exc_info=True)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     train_model()
