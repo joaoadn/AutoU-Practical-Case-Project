@@ -4,7 +4,7 @@ import torch
 import joblib
 import numpy as np
 from pathlib import Path
-from datasets import load_dataset, Dataset
+from datasets import load_dataset
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from config import BASE_DIR, MODEL_PATH
@@ -26,6 +26,9 @@ CSV_PATH = BASE_DIR / "data/email_training_data.csv"
 MODEL_DIR = BASE_DIR / "models/email-classifier"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
+# Carregar o tokenizer uma única vez
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 def load_data():
     """
     Carrega e converte os dados de treinamento para um formato compatível com transformers.
@@ -41,7 +44,6 @@ def tokenize_function(examples):
     """
     Tokeniza os textos usando o tokenizer do modelo do Hugging Face.
     """
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
     return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=512)
 
 def compute_metrics(eval_pred):
@@ -64,7 +66,6 @@ def train_model():
 
         # Configurar modelo
         model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         # Configuração do treinamento
         training_args = TrainingArguments(
