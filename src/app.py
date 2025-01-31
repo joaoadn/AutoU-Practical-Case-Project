@@ -1,11 +1,10 @@
 from flask import Flask, request, jsonify
 import joblib
-from openai import OpenAI
-from config import FLASK_CONFIG, MODEL_PATH, OPENAI_API_KEY
-import PyPDF2
+import openai
 import logging
 import os
 from functools import lru_cache
+from pdfplumber import open as pdf_open  # Alternativa mais leve e eficiente a PyPDF2
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -13,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 # Inicializar o Flask
 app = Flask(__name__)
-app.config.update(FLASK_CONFIG)
+app.config.from_object('config.FLASK_CONFIG')  # Configuração direto do arquivo
 
 # Carregar o modelo (com cache para evitar recarregamento)
 @lru_cache(maxsize=1)
 def load_model():
     try:
-        model = joblib.load(MODEL_PATH)
+        model = joblib.load(os.getenv('MODEL_PATH', 'model.pkl'))  # Melhor usar variável de ambiente para caminho
         logger.info("Modelo carregado com sucesso")
         return model
     except Exception as e:
@@ -28,14 +27,11 @@ def load_model():
 
 model = load_model()
 
-# Inicializar o cliente OpenAI
-client = OpenAI(api_key=OPENAI_API_KEY)
-
 # Função para extrair texto de PDF
 def extract_text_from_pdf(file):
     try:
-        pdf_reader = PyPDF2.PdfReader(file)
-        return " ".join(page.extract_text() for page in pdf_reader.pages)
+        with pdf_open(file) as pdf:
+            return " ".join(page.extract_text() for page in pdf.pages if page.extract_text())
     except Exception as e:
         logger.error(f"Erro ao extrair texto do PDF: {e}")
         return ""
@@ -51,15 +47,16 @@ def classify_email(content):
 # Função para gerar resposta automática
 def generate_response(content):
     try:
-        response = client.chat.completions.create(
+        openai.api_key = os.getenv('OPENAI_API_KEY')  # Definir a chave API de forma segura
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Você é um assistente profissional que gera respostas para emails."},
                 {"role": "user", "content": content}
             ],
-            max_tokens=100  # Limita o tamanho da resposta
+            max_tokens=100
         )
-        return response.choices[0].message.content
+        return response['choices'][0]['message']['content']
     except Exception as e:
         logger.error(f"Erro ao gerar resposta: {e}")
         return "Desculpe, não foi possível gerar uma resposta."
@@ -69,15 +66,11 @@ def generate_response(content):
 def process_email():
     try:
         # Verifica se o arquivo foi enviado
-        if 'file' in request.files:
-            file = request.files['file']
-            if file.filename.endswith('.pdf'):
-                content = extract_text_from_pdf(file)
-            else:
-                content = file.read().decode('utf-8')
+        file = request.files.get('file')
+        if file:
+            content = extract_text_from_pdf(file) if file.filename.endswith('.pdf') else file.read().decode('utf-8')
         else:
-            data = request.json
-            content = data.get('email', '')
+            content = request.json.get('email', '')
 
         # Validação do conteúdo
         if not content.strip():
