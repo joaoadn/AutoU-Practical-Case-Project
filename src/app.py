@@ -4,7 +4,7 @@ import openai
 import logging
 import os
 from functools import lru_cache
-from pdfplumber import open as pdf_open  # Alternativa mais leve e eficiente a PyPDF2
+import pdfplumber  # Correção da importação
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 # Inicializar o Flask
 app = Flask(__name__)
-app.config.from_object('config.FLASK_CONFIG')  # Configuração direto do arquivo
 
 # Carregar o modelo (com cache para evitar recarregamento)
 @lru_cache(maxsize=1)
 def load_model():
     try:
-        model = joblib.load(os.getenv('MODEL_PATH', 'model.pkl'))  # Melhor usar variável de ambiente para caminho
+        model_path = os.getenv('MODEL_PATH', 'model.pkl')  # Melhor usar variável de ambiente para caminho
+        model = joblib.load(model_path)
         logger.info("Modelo carregado com sucesso")
         return model
     except Exception as e:
@@ -30,7 +30,7 @@ model = load_model()
 # Função para extrair texto de PDF
 def extract_text_from_pdf(file):
     try:
-        with pdf_open(file) as pdf:
+        with pdfplumber.open(file) as pdf:
             return " ".join(page.extract_text() for page in pdf.pages if page.extract_text())
     except Exception as e:
         logger.error(f"Erro ao extrair texto do PDF: {e}")
@@ -86,19 +86,7 @@ def process_email():
         logger.error(f"Erro ao processar o email: {e}", exc_info=True)
         return jsonify({'error': 'Erro ao processar o email'}), 500
 
-# Handler para o Vercel
-def vercel_handler(request):
-    from flask import Response
-
-    # Converte a requisição do Vercel para o formato do Flask
-    with app.request_context(request):
-        try:
-            response = app.full_dispatch_request()
-        except Exception as e:
-            logger.error(f"Erro ao processar requisição: {e}", exc_info=True)
-            response = app.make_response(jsonify({'error': 'Erro interno no servidor'}), 500)
-        return Response(response.get_data(), status=response.status_code, headers=dict(response.headers))
-
-# Inicialização do servidor (para rodar localmente)
+# Inicialização do servidor (para rodar no Render)
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))  # Render define a porta automaticamente
+    app.run(host='0.0.0.0', port=port)
